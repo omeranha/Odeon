@@ -1,0 +1,69 @@
+# Example: Odeon next to existing Navidrome and Downtify containers.
+# Put these in a .env file next to this file:
+#   DOWNTIFY_TOKEN=dtfy_...
+#   WEBAUTHN_RP_ID=music.example.com
+#   WEBAUTHN_ORIGINS=https://music.example.com
+# Point the Cloudflare Tunnel hostname at http://odeon:3000 instead of Navidrome.
+#
+# Sign-in uses invite links and passkeys. Odeon signs users in to Navidrome with the Remote-User header, so
+# Navidrome must trust that header only from Odeon, over a private network nothing else joins:
+#   docker network create --internal --subnet 172.30.53.0/29 odeon_auth
+# and in Navidrome's compose file:
+#   environment:
+#     - ND_EXTAUTH_TRUSTEDSOURCES=172.30.53.5/32
+#   networks:
+#     default:
+#     odeon_auth:
+#       aliases: [navidrome-auth]
+# Don't publish Navidrome's port to the network. The first invite comes from the command line (administrators only):
+#   docker exec odeon node src/invite.ts <navidrome-admin-username>
+
+services:
+  odeon:
+    build: .
+    restart: unless-stopped
+    environment:
+      NAVIDROME_URL: http://navidrome-auth:4533
+      DOWNTIFY_URL: http://downtify:8000
+      DOWNTIFY_TOKEN: ${DOWNTIFY_TOKEN}
+      # Optional: a Downtify admin account, for explicit versions, song deletion and storage stats.
+      DOWNTIFY_ADMIN_USERNAME: ${DOWNTIFY_ADMIN_USERNAME:-}
+      DOWNTIFY_ADMIN_PASSWORD: ${DOWNTIFY_ADMIN_PASSWORD:-}
+      # Optional: Settings, Better quality. slskd's address and key, and the two folders mounted below.
+      SLSKD_URL: ${SLSKD_URL:-}
+      SLSKD_API_KEY: ${SLSKD_API_KEY:-}
+      LIBRARY_DIR: ${LIBRARY_DIR:-}
+      SLSKD_DIR: /slskd
+      QUALITY_AUTO_MINUTES: ${QUALITY_AUTO_MINUTES:-}
+      QUALITY_AUTO_USER: ${QUALITY_AUTO_USER:-}
+      # Optional: the Alexa skill's ID and the Navidrome user the Echo plays as.
+      ALEXA_SKILL_ID: ${ALEXA_SKILL_ID:-}
+      ALEXA_USERNAME: ${ALEXA_USERNAME:-}
+      WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID}
+      WEBAUTHN_ORIGINS: ${WEBAUTHN_ORIGINS}
+      DATA_DIR: /data
+    volumes:
+      - ./data:/data
+      # Optional, for Better quality: Downtify's downloads folder (read and write) and slskd's downloads folder.
+      # - /path/to/music/downtify:/library
+      # - /path/to/slskd-downloads:/slskd
+    networks:
+      default:
+      auth:
+        ipv4_address: 172.30.53.5
+
+  # Downtify saves into a folder inside the library Navidrome scans. For Soulseek, see docs/soulseek.md.
+  # downtify:
+  #   image: ghcr.io/henriquesebastiao/downtify:latest
+  #   user: "1000:1000"
+  #   environment:
+  #     - HOME=/data
+  #   volumes:
+  #     - /path/to/music/downtify:/downloads
+  #     - /path/to/slskd-downloads:/slskd
+  #     - ./downtify-data:/data
+
+networks:
+  auth:
+    name: odeon_auth
+    external: true

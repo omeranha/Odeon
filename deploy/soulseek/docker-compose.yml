@@ -1,0 +1,47 @@
+# slskd (Soulseek client) for Downtify. See docs/soulseek.md.
+#
+# Create .env next to this file:
+#   SLSKD_SLSK_USERNAME=<a Soulseek account name>
+#   SLSKD_SLSK_PASSWORD=<its password>
+#   SLSKD_API_KEY=<16 to 255 random characters>
+#   SLSKD_WEB_PASSWORD=<password for slskd's web page>
+#
+# Both containers join the external network "music" so Downtify can reach http://slskd:5030:
+#   docker network create music
+# and in Downtify's compose file add `networks: [default, music]` to its service, the same `music` network
+# declared as external, and this extra volume (the same host folder that slskd writes to):
+#   - /home/user/slskd-downloads:/slskd
+
+services:
+  slskd:
+    image: slskd/slskd:latest
+    container_name: slskd
+    user: "1000:1000"
+    restart: unless-stopped
+    environment:
+      SLSKD_REMOTE_CONFIGURATION: "false"
+      SLSKD_SLSK_USERNAME: ${SLSKD_SLSK_USERNAME}
+      SLSKD_SLSK_PASSWORD: ${SLSKD_SLSK_PASSWORD}
+      SLSKD_SLSK_LISTEN_PORT: "50300"
+      SLSKD_API_KEY: "role=ReadWrite;cidr=0.0.0.0/0,::/0;${SLSKD_API_KEY}"
+      SLSKD_USERNAME: admin
+      SLSKD_PASSWORD: ${SLSKD_WEB_PASSWORD}
+      SLSKD_DOWNLOADS_DIR: /app/downloads
+      # Sharing is off by default. Many Soulseek users queue or refuse people who share nothing; to share, mount a
+      # read-only folder and list it here (this uploads those files to strangers):
+      # SLSKD_SHARED_DIR: /music
+    ports:
+      # Soulseek peers connect here. It only helps when this port is reachable from the internet (not behind CGNAT).
+      - "50300:50300"
+      # The web page, for checking transfers. Not needed for Downtify, which uses the Docker network.
+      - "127.0.0.1:5030:5030"
+    volumes:
+      - ./data:/app
+      - /home/user/slskd-downloads:/app/downloads
+      # - /path/to/music:/music:ro
+    networks:
+      - music
+
+networks:
+  music:
+    external: true

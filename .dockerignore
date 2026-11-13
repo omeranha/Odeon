@@ -1,0 +1,14 @@
+.git
+.notes
+.vscode
+node_modules
+server/node_modules
+dist
+dev-dist
+*.local
+.env
+.env.*
+!.env.example
+server/.env
+data
+android
