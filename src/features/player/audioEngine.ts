@@ -8,6 +8,7 @@ import { getOfflineAudioUrl, useDownloadStore } from '../downloads/downloadManag
 import { credentialsOf, useCurrentProfile } from '../profiles/profileStore'
 import { recordPlay, recordPlaylistPlay } from './history'
 import { usePlayerStore } from './playerStore'
+import { getCachedAudioUrl, hasCachedSong } from './playbackCache'
 import { prefetchStream } from './prefetch'
 import { useProgressStore } from './progressStore'
 
@@ -24,6 +25,8 @@ let scrobbled = false
 let lastPositionStateUpdate = 0
 let priming = false
 let primed = false
+// Cached songs load asynchronously, which iOS only allows once the element has played inside a tap.
+let hasPlayed = false
 let silentClip = ''
 let loadToken = 0
 let pendingLoad: Promise<void> | null = null
@@ -134,11 +137,12 @@ function loadSong(song: SubsonicSong | undefined) {
   savePosition(true)
 
   // Streamed songs load synchronously so play() stays inside the user's tap, which iOS requires.
-  if (useDownloadStore.getState().songs[song.id]?.state !== 'done') {
+  const downloaded = useDownloadStore.getState().songs[song.id]?.state === 'done'
+  if (!downloaded && !(hasPlayed && hasCachedSong(song.id))) {
     loadStream(song, start)
     return
   }
-  pendingLoad = getOfflineAudioUrl(song.id)
+  pendingLoad = (downloaded ? getOfflineAudioUrl(song.id) : getCachedAudioUrl(song.id))
     .catch(() => undefined)
     .then((offlineUrl) => {
       if (token !== loadToken) {
@@ -351,6 +355,7 @@ audio.addEventListener('loadedmetadata', () => {
 
 audio.addEventListener('playing', () => {
   if (priming) return
+  hasPlayed = true
   recoveries = 0
   if (loadedSong) recordPlay(loadedSong.id)
   const { source } = usePlayerStore.getState()

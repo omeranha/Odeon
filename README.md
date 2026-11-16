@@ -9,7 +9,7 @@ Odeon can also add music to your library through [Downtify](https://github.com/h
 ## Features
 
 - Browse, search, Liked Songs, editable playlists, queue with shuffle and repeat, lock-screen controls.
-- Synced lyrics, a 10-band equalizer and offline downloads.
+- Synced lyrics, a 10-band equalizer and offline downloads. Songs you listen to are also kept on the device automatically (1 GB by default, adjustable in Settings) so replaying them starts at once.
 - Per-user history: songs played, recent searches and listening time per month. Songs from YouTube Music can be liked without adding them to the library.
 - Search that shows your library and YouTube Music in one list, with remixes, covers and karaoke set aside behind one button. Paste a Spotify, YouTube Music, Deezer or SoundCloud link to open it.
 - Always the original audio, with the codec and bitrate shown next to each artist name.

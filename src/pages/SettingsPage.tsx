@@ -5,6 +5,7 @@ import { useGetMusicEnabled } from '../features/getMusic/hooks'
 import { ExplicitRefresh } from '../features/settings/ExplicitRefresh'
 import { EqualizerSettings } from '../features/settings/EqualizerSettings'
 import { LibraryCleanup } from '../features/settings/LibraryCleanup'
+import { PlaybackCacheSettings } from '../features/settings/PlaybackCacheSettings'
 import { QualityUpgrade } from '../features/settings/QualityUpgrade'
 import { StorageStats } from '../features/settings/StorageStats'
 import { SecuritySettings } from '../features/settings/SecuritySettings'
@@ -87,6 +88,7 @@ export function SettingsPage() {
 
       <Section title="Storage">
         <StorageSettings />
+        <PlaybackCacheSettings />
       </Section>
 
       <Section title="About">

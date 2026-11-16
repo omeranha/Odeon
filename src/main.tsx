@@ -5,10 +5,12 @@ import { RouterProvider } from 'react-router'
 import { router } from './app/router'
 import './app/sessionReset'
 import { hydrateDownloads } from './features/downloads/downloadManager'
+import { hydratePlaybackCache } from './features/player/playbackCache'
 import { queryClient } from './lib/queryClient'
 import './index.css'
 
 void hydrateDownloads()
+void hydratePlaybackCache()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -1,5 +1,6 @@
 // Shared with the service worker, which serves pinned covers before its own runtime cache.
 export const AUDIO_CACHE = 'spotydrome-audio'
+export const PLAYBACK_CACHE = 'odeon-playback'
 export const PINNED_COVER_CACHE = 'spotydrome-offline-covers'
 export const RUNTIME_COVER_CACHE = 'spotydrome-covers'
 

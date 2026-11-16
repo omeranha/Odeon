@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { activityApi } from '../../lib/activity'
 import { toRemoteSong } from '../../lib/remote'
 import { getAudioElement } from '../player/audioEngine'
+import { cachePlayedSong } from '../player/playbackCache'
 import { usePlayerStore } from '../player/playerStore'
 import { credentialsOf, useCurrentProfile } from '../profiles/profileStore'
 import { historyKeys } from './hooks'
@@ -53,6 +54,7 @@ export function useActivityTracking() {
       const song = queue[currentIndex]
       if (!counted && song && songSeconds >= Math.min(PLAYED_AFTER_SECONDS, (song.duration || Infinity) / 2)) {
         counted = true
+        void cachePlayedSong(song, audio.currentSrc)
         activityApi
           .addPlay(credentials, toRemoteSong(song))
           .then(() => queryClient.invalidateQueries({ queryKey: historyKeys.plays }))
