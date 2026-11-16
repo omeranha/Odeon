@@ -11,6 +11,7 @@ import { MiniPlayer } from '../features/player/MiniPlayer'
 import { PlayerBar } from '../features/player/PlayerBar'
 import { QueuePanel } from '../features/player/QueuePanel'
 import { useTransport } from '../features/player/transport'
+import { useSpacebarToggle } from '../features/player/useSpacebarToggle'
 import { AddToPlaylistDialog } from '../features/playlists/AddToPlaylistDialog'
 import { DevicePicker } from '../features/remote/RemoteDevices'
 import { useRefreshChangedDownloads } from '../features/downloads/refreshChanged'
@@ -36,7 +37,9 @@ export function AppLayout() {
   useQueueSuggestions()
   useActivityTracking()
   useSyncExternalLikes()
-  const hasSong = Boolean(useTransport().song)
+  const transport = useTransport()
+  const hasSong = Boolean(transport.song)
+  useSpacebarToggle(transport.togglePlay, hasSong)
   const mainRef = useRef<HTMLElement>(null)
   const { pathname } = useLocation()
 
