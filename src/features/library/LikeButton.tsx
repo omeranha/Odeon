@@ -1,14 +1,18 @@
 import clsx from 'clsx'
 import { Heart } from 'lucide-react'
 import type { StarKind } from '../../lib/subsonic/api'
-import { useIsStarred, useToggleStar } from './stars'
+import type { SubsonicSong } from '../../lib/subsonic/types'
+import { useIsStarred, useToggleSongLike, useToggleStar } from './stars'
 
 const iconSizes = { sm: 'size-4', md: 'size-5', lg: 'size-7' }
 
-export function LikeButton({ kind, item, size = 'md', className }: { kind: StarKind; item: { id: string; starred?: string }; size?: keyof typeof iconSizes; className?: string }) {
-  const starred = useIsStarred(item)
+type LikeTarget = { kind: 'song'; item: SubsonicSong } | { kind: Exclude<StarKind, 'song'>; item: { id: string; starred?: string } }
+
+export function LikeButton({ size = 'md', className, ...target }: LikeTarget & { size?: keyof typeof iconSizes; className?: string }) {
+  const starred = useIsStarred(target.item)
   const toggleStar = useToggleStar()
-  const label = kind === 'song' ? (starred ? 'Remove from Liked Songs' : 'Save to Liked Songs') : starred ? 'Remove from Your Library' : 'Save to Your Library'
+  const toggleSongLike = useToggleSongLike()
+  const label = target.kind === 'song' ? (starred ? 'Remove from Liked Songs' : 'Save to Liked Songs') : starred ? 'Remove from Your Library' : 'Save to Your Library'
 
   return (
     <button
@@ -18,7 +22,8 @@ export function LikeButton({ kind, item, size = 'md', className }: { kind: StarK
       data-starred={starred}
       onClick={(event) => {
         event.stopPropagation()
-        void toggleStar(kind, item.id, !starred)
+        if (target.kind === 'song') void toggleSongLike(target.item, !starred)
+        else void toggleStar(target.kind, target.item.id, !starred)
       }}
       onDoubleClick={(event) => event.stopPropagation()}
       className={clsx('shrink-0 transition hover:scale-105', starred ? 'text-accent' : 'text-subdued hover:text-white', className)}

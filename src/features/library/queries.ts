@@ -1,4 +1,5 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
+import { likedSongsApi } from '../../lib/activity'
 import { coverSizeBucket } from '../../lib/offlineCaches'
 import * as api from '../../lib/subsonic/api'
 import type { SubsonicCredentials } from '../../lib/subsonic/client'
@@ -14,6 +15,7 @@ export const queryKeys = {
   topSongs: (artistName: string) => ['topSongs', artistName] as const,
   search: (query: string) => ['search', query] as const,
   starred: ['starred'] as const,
+  likedSongs: ['likedSongs'] as const,
   playlists: ['playlists'] as const,
   playlist: (id: string) => ['playlist', id] as const,
 }
@@ -56,6 +58,11 @@ export function useSearch(query: string) {
 export function useStarred() {
   const credentials = useCredentials()
   return useQuery({ queryKey: queryKeys.starred, queryFn: ({ signal }) => withOfflineFallback(() => api.getStarred(credentials, signal), offlineStarred) })
+}
+
+export function useExternalLikes() {
+  const credentials = useCredentials()
+  return useQuery({ queryKey: queryKeys.likedSongs, queryFn: () => likedSongsApi.list(credentials), retry: false })
 }
 
 export function usePlaylists() {

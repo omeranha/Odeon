@@ -8,12 +8,12 @@ import { useDownloadContext, useSongDownload } from '../downloads/hooks'
 import { useRequestDownload } from '../getMusic/hooks'
 import { usePlayerStore } from '../player/playerStore'
 import { useAddToPlaylistStore } from '../playlists/addToPlaylistStore'
-import { useIsStarred, useToggleStar } from './stars'
+import { useIsStarred, useToggleSongLike } from './stars'
 
 export function useSongMenuItems(song: SubsonicSong, extraItems: MenuEntry[] = []): MenuEntry[] {
   const navigate = useNavigate()
   const starred = useIsStarred(song)
-  const toggleStar = useToggleStar()
+  const toggleSongLike = useToggleSongLike()
   const openAddToPlaylist = useAddToPlaylistStore((state) => state.open)
   const download = useSongDownload(song.id)
   const downloadContext = useDownloadContext()
@@ -34,10 +34,13 @@ export function useSongMenuItems(song: SubsonicSong, extraItems: MenuEntry[] = [
     },
   }
 
-  // Streamed songs aren't in Navidrome yet, so liking, playlists and offline downloads only work after they're added.
+  const likeEntry: MenuEntry = { label: starred ? 'Remove from Liked Songs' : 'Save to Liked Songs', icon: Heart, onSelect: () => void toggleSongLike(song, !starred) }
+
+  // Streamed songs aren't in Navidrome yet, so playlists and offline downloads only work after they're added.
   const external = song.external
   if (external) {
     return [
+      likeEntry,
       { label: 'Add to your library', icon: LibraryBig, onSelect: () => void requestDownload([{ id: external.catalogId, title: song.title, artists: song.artist ? [song.artist] : [], explicit: false }]) },
       addToQueue,
     ]
@@ -46,7 +49,7 @@ export function useSongMenuItems(song: SubsonicSong, extraItems: MenuEntry[] = [
   return [
     { label: 'Add to playlist', icon: ListPlus, onSelect: () => openAddToPlaylist([song]) },
     ...extraItems,
-    { label: starred ? 'Remove from Liked Songs' : 'Save to Liked Songs', icon: Heart, onSelect: () => void toggleStar('song', song.id, !starred) },
+    likeEntry,
     addToQueue,
     downloaded
       ? { label: 'Remove download', icon: CircleX, onSelect: () => void handleRemoveDownload() }

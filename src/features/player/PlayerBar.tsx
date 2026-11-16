@@ -62,7 +62,7 @@ function NowPlaying({ song, remoteName }: { song: SubsonicSong; remoteName: stri
         </div>
         {remoteName && <PlayingOnLabel name={remoteName} />}
       </div>
-      {!song.external && !remoteName && <LikeButton kind="song" item={song} size="sm" className="ml-2" />}
+      {!remoteName && <LikeButton kind="song" item={song} size="sm" className="ml-2" />}
     </div>
   )
 }

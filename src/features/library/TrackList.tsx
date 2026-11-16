@@ -96,7 +96,8 @@ export function TrackRow({ song, number, showAlbum = false, showCover = false, o
       )}
 
       <div className="flex items-center gap-3 md:gap-4">
-        {song.external ? <AddSongButton song={song} /> : <LikeButton kind="song" item={song} size="sm" className="hidden md:block md:opacity-0 md:group-hover:opacity-100 md:data-[starred=true]:opacity-100" />}
+        {song.external && <AddSongButton song={song} />}
+        <LikeButton kind="song" item={song} size="sm" className="hidden md:block md:opacity-0 md:group-hover:opacity-100 md:data-[starred=true]:opacity-100" />
         <span className="hidden w-11 text-right text-sm text-subdued tabular-nums md:block">{formatTime(song.duration ?? 0)}</span>
         <DropdownMenu label={`More options for ${song.title}`} items={menuItems} header={<SongMenuHeader song={song} />} className="md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100" />
         {dragHandle}

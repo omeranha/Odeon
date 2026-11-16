@@ -8,6 +8,7 @@ import { collectionPath, useDownloadedCollections } from '../downloads/hooks'
 import { nextPlaylistName, usePlaylistMutations } from '../playlists/mutations'
 import { useCurrentProfile } from '../profiles/profileStore'
 import { CoverArt, LikedSongsArtwork } from './cards'
+import { useLikedSongs } from './likedSongs'
 import { usePlaylists, useStarred } from './queries'
 
 type LibraryFilter = 'playlists' | 'albums' | 'artists' | 'downloaded'
@@ -24,6 +25,7 @@ export function LibraryPanel({ leading }: { leading?: ReactNode }) {
   const navigate = useNavigate()
   const { data: playlists = [] } = usePlaylists()
   const { data: starred } = useStarred()
+  const likedSongs = useLikedSongs().songs
   const { create } = usePlaylistMutations()
   const [filter, setFilter] = useState<LibraryFilter | null>(null)
   const [creating, setCreating] = useState(false)
@@ -68,7 +70,7 @@ export function LibraryPanel({ leading }: { leading?: ReactNode }) {
       </div>
 
       <ul className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
-        {shows('playlists') && <LibraryItem to="/collection/tracks" source={{ type: 'liked' }} artwork={<LikedSongsArtwork className="size-12 rounded" />} title="Liked Songs" subtitle={`Playlist • ${pluralize(starred?.song?.length ?? 0, 'song')}`} />}
+        {shows('playlists') && <LibraryItem to="/collection/tracks" source={{ type: 'liked' }} artwork={<LikedSongsArtwork className="size-12 rounded" />} title="Liked Songs" subtitle={`Playlist • ${pluralize(likedSongs.length, 'song')}`} />}
         {shows('playlists') &&
           playlists.map((playlist) => (
             <LibraryItem key={playlist.id} to={`/playlist/${playlist.id}`} source={{ type: 'playlist', id: playlist.id }} artwork={<CoverArt coverArtId={playlist.songCount > 0 ? playlist.coverArt : undefined} size={96} kind="playlist" className="size-12 rounded" />} title={playlist.name} subtitle={`Playlist • ${playlist.owner ?? ''}`} />

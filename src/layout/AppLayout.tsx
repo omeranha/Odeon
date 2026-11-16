@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import { useEffect, useRef } from 'react'
 import { Outlet, useLocation } from 'react-router'
 import { useActivityTracking } from '../features/history/useActivityTracking'
+import { useSyncExternalLikes } from '../features/library/stars'
 import { LyricsPanel } from '../features/lyrics/LyricsPanel'
 import { usePlayerEngine } from '../features/player/audioEngine'
 import { useEqualizerEngine } from '../features/player/equalizer'
@@ -34,6 +35,7 @@ export function AppLayout() {
   useRemoteSession()
   useQueueSuggestions()
   useActivityTracking()
+  useSyncExternalLikes()
   const hasSong = Boolean(useTransport().song)
   const mainRef = useRef<HTMLElement>(null)
   const { pathname } = useLocation()

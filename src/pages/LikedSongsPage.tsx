@@ -6,20 +6,18 @@ import { DownloadButton } from '../features/downloads/DownloadButton'
 import { useKeepDownloadInSync } from '../features/downloads/hooks'
 import { LikedSongsArtwork } from '../features/library/cards'
 import { CollectionPage, MetaSeparator, ShuffleToggle } from '../features/library/CollectionPage'
-import { useStarred } from '../features/library/queries'
+import { useLikedSongs } from '../features/library/likedSongs'
 import { TrackList } from '../features/library/TrackList'
 import { useCollectionPlayback } from '../features/player/playback'
 import { useCurrentProfile } from '../features/profiles/profileStore'
 
 const source = { type: 'liked' as const, name: 'Liked Songs' }
-const NO_SONGS: never[] = []
 
 export function LikedSongsPage() {
   const profile = useCurrentProfile()
-  const { data, isPending } = useStarred()
-  const songs = data?.song ?? NO_SONGS
+  const { songs, librarySongs, isPending } = useLikedSongs()
   const playback = useCollectionPlayback(source, songs)
-  const downloadInput = { type: 'liked' as const, id: 'songs', name: 'Liked Songs', songs, snapshot: { song: songs } }
+  const downloadInput = { type: 'liked' as const, id: 'songs', name: 'Liked Songs', songs: librarySongs, snapshot: { song: librarySongs } }
   useKeepDownloadInSync(downloadInput)
 
   return (
@@ -40,7 +38,7 @@ export function LikedSongsPage() {
           <>
             <PlayButton playing={playback.playing} label="Liked Songs" size="lg" onClick={playback.toggle} />
             <ShuffleToggle />
-            <DownloadButton {...downloadInput} />
+            {librarySongs.length > 0 && <DownloadButton {...downloadInput} />}
           </>
         )
       }

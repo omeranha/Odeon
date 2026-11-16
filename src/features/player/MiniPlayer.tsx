@@ -37,7 +37,7 @@ export function MiniPlayer() {
               <QualityBadge song={song} className="border-white/40 text-white/70" />
             </div>}
         </div>
-        {!song.external && !remoteName && <LikeButton kind="song" item={song} size="md" className="!text-white data-[starred=true]:!text-accent" />}
+        {!remoteName && <LikeButton kind="song" item={song} size="md" className="!text-white data-[starred=true]:!text-accent" />}
         <button
           type="button"
           aria-label={isPlaying ? 'Pause' : 'Play'}
