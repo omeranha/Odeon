@@ -17,6 +17,20 @@ export interface AccountPasskey {
   lastUsedAt?: number
 }
 
+export interface DeviceCodeStart {
+  deviceCode: string
+  userCode: string
+  expiresAt: number
+  interval: number
+}
+
+export interface PendingDevice {
+  deviceName: string
+  requestedAt: number
+  expiresAt: number
+  sameNetwork: boolean
+}
+
 export interface InviteInfo {
   username: string
   name: string
@@ -99,7 +113,9 @@ export const accountApi = {
 }
 
 export const deviceLinkApi = {
-  check: (credentials: SubsonicCredentials, code: string) => call<{ deviceName: string; expiresAt: number }>(`/device-links/${encodeURIComponent(code)}`, {}, credentials),
+  start: (name: string) => call<DeviceCodeStart>('/devices/start', post({ name })),
+  poll: (deviceCode: string) => call<SignInResult | { status: 'pending' }>('/devices/poll', post({ deviceCode })),
+  check: (credentials: SubsonicCredentials, code: string) => call<PendingDevice>(`/device-links/${encodeURIComponent(code)}`, {}, credentials),
   approve: (credentials: SubsonicCredentials, code: string) => call<{ deviceName: string; username: string }>(`/device-links/${encodeURIComponent(code)}`, post({}), credentials),
 }
 

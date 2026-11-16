@@ -8,7 +8,7 @@ import { clientIp, rateLimited, recordFailedAuth, retryAfterSeconds } from './se
 // Sign-in for devices that can't use passkeys (old Android): the device shows a code, a signed-in user approves it
 // in Settings, and the device's polling picks up that user's session. Modelled on the OAuth device flow (RFC 8628).
 
-const LINK_TTL_MS = 10 * 60_000
+const LINK_TTL_MS = 3 * 60_000
 const POLL_INTERVAL_S = 3
 const MAX_PENDING = 200
 const WINDOW = 15 * 60_000
@@ -18,6 +18,8 @@ const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 interface PendingLink {
   deviceName: string
   userCode: string
+  requestedAt: number
+  requestIp: string
   expiresAt: number
   session?: NavidromeSession
 }
@@ -67,8 +69,9 @@ export function deviceLinkRoutes() {
     const deviceName = typeof name === 'string' && name.trim() ? name.trim().slice(0, 40) : 'Device'
     const deviceCode = randomBytes(32).toString('base64url')
     const userCode = newUserCode()
-    const expiresAt = Date.now() + LINK_TTL_MS
-    links.set(hash(deviceCode), { deviceName, userCode, expiresAt })
+    const requestedAt = Date.now()
+    const expiresAt = requestedAt + LINK_TTL_MS
+    links.set(hash(deviceCode), { deviceName, userCode, requestedAt, requestIp: clientIp(c), expiresAt })
     byUserCode.set(userCode, hash(deviceCode))
     return c.json({ deviceCode, userCode: `${userCode.slice(0, 4)}-${userCode.slice(4)}`, expiresAt, interval: POLL_INTERVAL_S }, 201)
   })
@@ -95,7 +98,8 @@ export function deviceLinkRoutes() {
       recordFailedAuth(clientIp(c), `unknown device code entered by "${username.slice(0, 64)}"`)
       return c.json({ error: "That code doesn't match a device waiting to sign in. Check the code on the device, or start again there." }, 404)
     }
-    return c.json({ deviceName: found.link.deviceName, expiresAt: found.link.expiresAt })
+    // The name is whatever the requesting device sent, so the approver also gets whether it came from their own network.
+    return c.json({ deviceName: found.link.deviceName, requestedAt: found.link.requestedAt, expiresAt: found.link.expiresAt, sameNetwork: found.link.requestIp === clientIp(c) })
   })
 
   approval.post('/:code', async (c) => {

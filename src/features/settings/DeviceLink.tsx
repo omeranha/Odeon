@@ -1,7 +1,7 @@
 import { MonitorSmartphone } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { showToast } from '../../components/toastStore'
-import { deviceLinkApi, messageFor } from '../../lib/account'
+import { deviceLinkApi, messageFor, type PendingDevice } from '../../lib/account'
 import { credentialsOf, useCurrentProfile } from '../profiles/profileStore'
 import { pillButton } from './SecuritySettings'
 
@@ -10,7 +10,7 @@ const inputClass = 'w-40 rounded bg-highlight px-3 py-2 font-mono text-base trac
 export function DeviceLink() {
   const credentials = credentialsOf(useCurrentProfile())
   const [code, setCode] = useState('')
-  const [device, setDevice] = useState<string | null>(null)
+  const [device, setDevice] = useState<PendingDevice | null>(null)
   const [busy, setBusy] = useState(false)
 
   async function step(action: () => Promise<void>, fallback: string) {
@@ -26,7 +26,7 @@ export function DeviceLink() {
 
   const check = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    void step(async () => setDevice((await deviceLinkApi.check(credentials, code.trim())).deviceName), "That code couldn't be checked")
+    void step(async () => setDevice(await deviceLinkApi.check(credentials, code.trim())), "That code couldn't be checked")
   }
 
   const approve = () =>
@@ -42,12 +42,16 @@ export function DeviceLink() {
       <p className="flex items-center gap-2 text-sm font-bold">
         <MonitorSmartphone className="size-4" /> Link a device
       </p>
-      <p className="mb-3 text-sm text-subdued">For devices without passkeys, like the car tablet. Enter the code it shows to sign it in to your account.</p>
+      <p className="mb-3 text-sm text-subdued">Sign in a new phone, computer or the car tablet without an invite link. Open Odeon on it, choose Sign in with a code, and enter the code it shows.</p>
       {device ? (
         <div className="flex flex-wrap items-center gap-3 rounded bg-white/5 px-3 py-2 text-sm">
-          <span className="min-w-0 flex-1">
-            Sign in <span className="font-bold">{device}</span> as you? Only do this for a device you're holding or can see.
-          </span>
+          <div className="min-w-0 flex-1">
+            <p>
+              Sign in <span className="font-bold">{device.deviceName}</span> as you? Only do this for a device you're holding or can see.
+            </p>
+            <p className="mt-1 text-xs text-subdued">The device chose this name, so it isn't verified. Requested at {new Date(device.requestedAt).toLocaleTimeString()}.</p>
+            {!device.sameNetwork && <p className="mt-2 rounded bg-danger/15 px-2 py-1.5 text-danger">This request came from a different network than yours. If someone else gave you this code, don't approve it.</p>}
+          </div>
           <button type="button" disabled={busy} onClick={approve} className={pillButton}>
             Sign it in
           </button>

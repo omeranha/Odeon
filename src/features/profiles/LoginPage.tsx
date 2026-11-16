@@ -2,7 +2,8 @@ import { ChevronLeft, KeyRound } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { Logo } from '../../components/Logo'
-import { AccountError, isPasskeyCancel, profileLoginOf, signInWithPasskey } from '../../lib/account'
+import { AccountError, isPasskeyCancel, profileLoginOf, signInWithPasskey, type SignInResult } from '../../lib/account'
+import { DeviceCodeSignIn } from './DeviceCodeSignIn'
 import { useProfileStore } from './profileStore'
 
 export const primaryButton = 'flex items-center justify-center gap-2 rounded-full bg-accent py-3.5 font-bold text-black transition hover:scale-[1.02] hover:bg-accent-hover disabled:pointer-events-none disabled:opacity-60'
@@ -15,12 +16,16 @@ export function LoginPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(searchParams.has('expired') ? 'Your session expired. Sign in again to continue.' : null)
 
+  function finishSignIn(result: SignInResult) {
+    saveAndActivate(profileLoginOf(result))
+    navigate('/', { replace: true })
+  }
+
   async function signIn() {
     setBusy(true)
     setError(null)
     try {
-      saveAndActivate(profileLoginOf(await signInWithPasskey()))
-      navigate('/', { replace: true })
+      finishSignIn(await signInWithPasskey())
     } catch (err) {
       if (!isPasskeyCancel(err)) setError(err instanceof AccountError ? err.message : 'Something went wrong. Try again.')
     } finally {
@@ -52,7 +57,9 @@ export function LoginPage() {
           <KeyRound className="size-5" /> {busy ? 'Waiting for your passkey…' : 'Sign in with a passkey'}
         </button>
 
-        <p className="text-center text-sm text-subdued">New here? Open the invite link the administrator sent you to create your passkey. Lost your passkey? Ask for a new invite link.</p>
+        <DeviceCodeSignIn onSignedIn={finishSignIn} />
+
+        <p className="text-center text-sm text-subdued">New here? Open the invite link the administrator sent you to create your passkey. Adding another device to your account? Sign in with a code approved from a device you're already signed in on. Lost every device and passkey? Ask for a new invite link.</p>
       </main>
     </div>
   )
