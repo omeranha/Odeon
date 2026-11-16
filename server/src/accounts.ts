@@ -24,7 +24,6 @@ export interface Account {
 export interface Invite {
   username: string
   navidromeId: string
-  name: string
   createdBy: string
   createdAt: number
   expiresAt: number
@@ -93,6 +92,17 @@ export const accounts = {
     return 'removed'
   },
 
+  // The Navidrome user was renamed: passkeys, devices and open invites follow the new name.
+  rename(oldName: string, newName: string) {
+    store.update((data) => {
+      const account = data.accounts[keyOf(oldName)]
+      if (account) {
+        delete data.accounts[keyOf(oldName)]
+        data.accounts[keyOf(newName)] = { ...account, username: newName }
+      }
+      for (const invite of Object.values(data.invites)) if (keyOf(invite.username) === keyOf(oldName)) invite.username = newName
+    })
+  },
   removeAccess(username: string): boolean {
     let existed = false
     store.update((data) => {

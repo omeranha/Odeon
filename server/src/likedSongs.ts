@@ -24,6 +24,15 @@ function likesOf(c: Context): LikedSong[] {
   return users[key]
 }
 
+export async function renameLikedSongs(oldName: string, newName: string) {
+  await store.ready
+  store.update((data) => {
+    const from = oldName.toLowerCase()
+    if (from === newName.toLowerCase() || !data.users[from]) return
+    data.users[newName.toLowerCase()] = data.users[from]
+    delete data.users[from]
+  })
+}
 export function likedSongsRoutes() {
   const app = new Hono()
 

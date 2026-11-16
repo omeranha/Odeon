@@ -43,7 +43,7 @@ export function UserManagement() {
     setRemoving(null)
     try {
       await adminApi.removeAccess(credentials, user.username)
-      showToast(`Removed ${user.name}'s passkeys and invites`)
+      showToast(`Removed ${user.username}'s passkeys and invites`)
       refresh()
     } catch (err) {
       showToast(messageFor(err, "Access couldn't be removed"))
@@ -66,7 +66,7 @@ export function UserManagement() {
           <li key={user.id} className="flex flex-wrap items-center gap-3 rounded bg-white/5 px-3 py-2 text-sm">
             <div className="min-w-0 flex-1">
               <p className="truncate font-bold">
-                {user.name} <span className="font-normal text-subdued">@{user.username}</span>
+                {user.username}
                 {user.isAdmin && <span className="ml-2 text-xs font-normal text-subdued">Administrator</span>}
               </p>
               <p className="truncate text-xs text-subdued">{statusOf(user)}</p>
@@ -93,7 +93,7 @@ export function UserManagement() {
           }}
         />
       )}
-      {removing && <ConfirmDialog title={`Remove ${removing.name}'s access?`} message="Their passkeys and open invites are deleted. Devices already signed in keep working until you change their password or delete them in Navidrome." confirmLabel="Remove access" onConfirm={() => void removeAccess(removing)} onClose={() => setRemoving(null)} />}
+      {removing && <ConfirmDialog title={`Remove ${removing.username}'s access?`} message="Their passkeys and open invites are deleted. Devices already signed in keep working until you change their password or delete them in Navidrome." confirmLabel="Remove access" onConfirm={() => void removeAccess(removing)} onClose={() => setRemoving(null)} />}
     </div>
   )
 }
@@ -103,7 +103,6 @@ const inputClass = 'w-full rounded bg-highlight px-3 py-2 text-base outline-none
 function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (invite: CreatedInvite) => void }) {
   const credentials = credentialsOf(useCurrentProfile())
   const [username, setUsername] = useState('')
-  const [name, setName] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -111,7 +110,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
     event.preventDefault()
     setBusy(true)
     try {
-      onCreated(await adminApi.createUser(credentials, { username: username.trim(), name: name.trim(), isAdmin }))
+      onCreated(await adminApi.createUser(credentials, { username: username.trim(), isAdmin }))
     } catch (err) {
       showToast(messageFor(err, "The user couldn't be created"))
       setBusy(false)
@@ -124,10 +123,6 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
         <label className="flex flex-col gap-1 text-sm">
           Username
           <input value={username} onChange={(event) => setUsername(event.target.value)} required maxLength={64} pattern="[\p{L}\p{N}._@\-]+" autoCapitalize="none" autoComplete="off" spellCheck={false} autoFocus className={inputClass} />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Name
-          <input value={name} onChange={(event) => setName(event.target.value)} maxLength={100} placeholder={username || 'Shown in the app'} autoComplete="off" className={inputClass} />
         </label>
         <label className="flex items-center gap-3 text-sm">
           <input type="checkbox" checked={isAdmin} onChange={(event) => setIsAdmin(event.target.checked)} className="size-4 accent-accent" />

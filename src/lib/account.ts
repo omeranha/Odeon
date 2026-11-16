@@ -3,7 +3,6 @@ import type { SubsonicCredentials } from './subsonic/client'
 
 export interface SignInResult {
   id: string
-  name: string
   username: string
   isAdmin: boolean
   subsonicToken: string
@@ -33,7 +32,6 @@ export interface PendingDevice {
 
 export interface InviteInfo {
   username: string
-  name: string
   expiresAt: number
   existingAccount: boolean
 }
@@ -41,7 +39,6 @@ export interface InviteInfo {
 export interface ManagedUser {
   id: string
   username: string
-  name: string
   isAdmin: boolean
   passkeys: number
   inviteExpiresAt: number | null
@@ -109,6 +106,7 @@ export const accountApi = {
     const response = await startRegistration({ optionsJSON: options })
     await call('/account/passkeys', post({ challengeId, response, name }), credentials)
   },
+  rename: (credentials: SubsonicCredentials, username: string) => call<SignInResult>('/account/username', { method: 'PUT', body: JSON.stringify({ username }) }, credentials),
   removePasskey: (credentials: SubsonicCredentials, id: string) => call<void>(`/account/passkeys/${encodeURIComponent(id)}`, { method: 'DELETE' }, credentials),
 }
 
@@ -121,7 +119,7 @@ export const deviceLinkApi = {
 
 export const adminApi = {
   users: (credentials: SubsonicCredentials) => call<ManagedUser[]>('/admin/users', {}, credentials),
-  createUser: (credentials: SubsonicCredentials, user: { username: string; name: string; isAdmin: boolean }) => call<CreatedInvite>('/admin/users', post(user), credentials),
+  createUser: (credentials: SubsonicCredentials, user: { username: string; isAdmin: boolean }) => call<CreatedInvite>('/admin/users', post(user), credentials),
   createInvite: (credentials: SubsonicCredentials, username: string) => call<CreatedInvite>('/admin/invites', post({ username }), credentials),
   removeAccess: (credentials: SubsonicCredentials, username: string) => call<void>(`/admin/users/${encodeURIComponent(username)}/access`, { method: 'DELETE' }, credentials),
   security: (credentials: SubsonicCredentials) => call<SecurityOverview>('/admin/security', {}, credentials),
@@ -148,5 +146,5 @@ export function deviceName(): string {
 }
 
 export function profileLoginOf(result: SignInResult) {
-  return { id: result.id, username: result.username, displayName: result.name || result.username, isAdmin: result.isAdmin, token: result.subsonicToken, salt: result.subsonicSalt }
+  return { id: result.id, username: result.username, isAdmin: result.isAdmin, token: result.subsonicToken, salt: result.subsonicSalt }
 }

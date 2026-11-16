@@ -10,6 +10,7 @@ import { QualityUpgrade } from '../features/settings/QualityUpgrade'
 import { StorageStats } from '../features/settings/StorageStats'
 import { SecuritySettings } from '../features/settings/SecuritySettings'
 import { UserManagement } from '../features/settings/UserManagement'
+import { UsernameSettings } from '../features/settings/UsernameSettings'
 import { ProfileAvatar } from '../features/profiles/ProfileAvatar'
 import { useCurrentProfile, useProfileStore } from '../features/profiles/profileStore'
 
@@ -27,13 +28,8 @@ export function SettingsPage() {
       <Section title="Account">
         <div className="flex items-center gap-4 py-2">
           <ProfileAvatar profile={profile} size="md" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-bold">{profile.displayName}</p>
-            <p className="truncate text-sm text-subdued">
-              @{profile.username}
-              {profile.isAdmin && ' • Administrator'}
-            </p>
-          </div>
+          <UsernameSettings />
+
         </div>
         <div className="flex flex-wrap gap-3 pt-2">
           <button type="button" onClick={deactivate} className="rounded-full border border-white/50 px-5 py-2 text-sm font-bold transition hover:scale-105 hover:border-white">

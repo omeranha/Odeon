@@ -21,7 +21,7 @@ export function ProfilesPage() {
       navigate('/', { replace: true })
       return
     }
-    if (window.confirm(`Remove ${profile.displayName} from this device?`)) remove(profile.id)
+    if (window.confirm(`Remove ${profile.username} from this device?`)) remove(profile.id)
   }
 
   return (
@@ -41,7 +41,7 @@ export function ProfilesPage() {
                   </span>
                 )}
               </span>
-              <span className="w-full truncate text-sm text-subdued group-hover:text-white">{profile.displayName}</span>
+              <span className="w-full truncate text-sm text-subdued group-hover:text-white">{profile.username}</span>
             </button>
           </li>
         ))}

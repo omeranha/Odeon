@@ -31,8 +31,7 @@ export function ProfileMenu({ align = 'right' }: { align?: 'left' | 'right' }) {
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div role="menu" className={clsx('absolute top-full z-50 mt-2 w-60 rounded-md bg-elevated p-1 shadow-2xl', align === 'right' ? 'right-0' : 'left-0')}>
             <div className="border-b border-white/10 px-3 py-2.5">
-              <p className="truncate font-bold">{profile.displayName}</p>
-              <p className="truncate text-xs text-subdued">@{profile.username}</p>
+              <p className="truncate font-bold">{profile.username}</p>
             </div>
             <Link to="/settings" role="menuitem" onClick={() => setOpen(false)} className={itemClass}>
               <Settings className="size-4" /> Settings

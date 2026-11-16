@@ -19,5 +19,5 @@ export function ProfileAvatar({ profile, size = 'sm' }: { profile: Profile; size
   const classes = clsx('shrink-0 rounded-full', sizeClasses[size])
   if (profile.avatarUrl) return <img src={profile.avatarUrl} alt="" className={clsx(classes, 'object-cover')} />
 
-  return <span className={clsx(classes, colorFor(profile.id), 'grid place-items-center font-bold text-black')}>{profile.displayName.charAt(0).toUpperCase()}</span>
+  return <span className={clsx(classes, colorFor(profile.id), 'grid place-items-center font-bold text-black')}>{profile.username.charAt(0).toUpperCase()}</span>
 }

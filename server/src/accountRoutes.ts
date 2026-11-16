@@ -1,10 +1,13 @@
 import { generateAuthenticationOptions, generateRegistrationOptions, verifyAuthenticationResponse, verifyRegistrationResponse, type AuthenticationResponseJSON, type RegistrationResponseJSON } from '@simplewebauthn/server'
 import { Hono, type Context } from 'hono'
 import { accounts, accountsReady, invites, webauthnChallenges, type Invite } from './accounts.ts'
-import { requestAuth, requireNavidromeAdmin, requireNavidromeUser } from './auth.ts'
+import { renameActivity } from './activity.ts'
+import { forgetVerifiedLogins, requestAuth, requireNavidromeAdmin, requireNavidromeUser } from './auth.ts'
 import { config } from './config.ts'
-import { createUser, listUsers, sessionFor, userExists } from './navidromeAuth.ts'
+import { renameLikedSongs } from './likedSongs.ts'
+import { createUser, listUsers, renameUser, sessionFor, userExists } from './navidromeAuth.ts'
 import type { SubsonicAuth } from './navidrome.ts'
+import { renameRemoteSession } from './remote.ts'
 import { activeBans, clientIp, rateLimited, recentSecurityEvents, recordFailedAuth, retryAfterSeconds, unban } from './security.ts'
 
 const WINDOW = 15 * 60_000
@@ -48,10 +51,18 @@ export async function createInvite(username: string, createdBy: string, adminOnl
   const existing = accounts.get(session.username)
   // A Navidrome user deleted and re-created under the same name is a different person: start them from scratch.
   if (existing && existing.navidromeId !== session.id) accounts.removeAccess(session.username)
-  const { token, expiresAt } = invites.create({ username: session.username, navidromeId: session.id, name: session.name || session.username, createdBy })
+  const { token, expiresAt } = invites.create({ username: session.username, navidromeId: session.id, createdBy })
   return { link: `${origins[0]}/invite/${token}`, expiresAt, username: session.username }
 }
 
+// Navidrome only lets an administrator rename users. The requester is used if they are one, else the first administrator with an account here.
+async function findAdministrator(requester: string): Promise<string | undefined> {
+  for (const candidate of new Set([requester, ...accounts.all().map((account) => account.username)])) {
+    const session = await sessionFor(candidate).catch(() => undefined)
+    if (session?.isAdmin) return session.username
+  }
+  return undefined
+}
 export function accountRoutes() {
   const app = new Hono()
 
@@ -103,7 +114,7 @@ export function accountRoutes() {
       recordFailedAuth(ip, 'invalid or expired invite link')
       return c.json({ error: 'This invite link is invalid or has expired. Ask the administrator for a new one.' }, 404)
     }
-    return c.json({ username: found.invite.username, name: found.invite.name, expiresAt: found.invite.expiresAt, existingAccount: Boolean(accounts.get(found.invite.username)) })
+    return c.json({ username: found.invite.username, expiresAt: found.invite.expiresAt, existingAccount: Boolean(accounts.get(found.invite.username)) })
   })
 
   app.post('/invites/:token/options', async (c) => {
@@ -115,7 +126,6 @@ export function accountRoutes() {
       rpName,
       rpID: rpId,
       userName: found.invite.username,
-      userDisplayName: found.invite.name,
       userID: Buffer.from(accounts.webauthnUserIdFor(found.invite.username), 'base64url'),
       attestationType: 'none',
       excludeCredentials: (account?.passkeys ?? []).map((passkey) => ({ id: passkey.id, transports: passkey.transports })),
@@ -189,6 +199,34 @@ export function accountRoutes() {
     }
   })
 
+  // Changing the user name renames the Navidrome user, so Subsonic tokens keep working but other devices must sign in again.
+  account.put('/username', async (c) => {
+    const auth = requestAuth(c) as SubsonicAuth
+    if (rateLimited(`rename:${auth.username.toLowerCase()}`, 5, WINDOW)) return tooMany(c)
+    const { username } = await body<{ username: string }>(c)
+    const next = typeof username === 'string' ? username.trim() : ''
+    if (!USERNAME_PATTERN.test(next)) return c.json({ error: 'Use 1 to 64 letters, numbers, dots, dashes, underscores or @ for the username' }, 400)
+    const session = await sessionFor(auth.username)
+    if (!session) return c.json({ error: 'Your account no longer exists on the music server.' }, 403)
+    if (next === session.username) return c.json({ error: 'That is already your username' }, 400)
+    const reserved = [config.alexa?.username, config.quality?.autoUser]
+    if (reserved.some((name) => name?.toLowerCase() === session.username.toLowerCase())) return c.json({ error: "The server's Alexa or quality upgrade settings use this account by name, so it can't be renamed here." }, 409)
+    const sameAccount = next.toLowerCase() === session.username.toLowerCase()
+    if (!sameAccount && (await userExists(next))) return c.json({ error: 'That username is taken' }, 409)
+    const administrator = await findAdministrator(session.username)
+    if (!administrator) return c.json({ error: 'No administrator account was found to make the change' }, 503)
+    try {
+      if ((await renameUser(administrator, session.id, next)) === 'taken') return c.json({ error: 'That username is taken' }, 409)
+    } catch (error) {
+      console.error('Renaming a Navidrome user failed:', error instanceof Error ? error.message : error)
+      return c.json({ error: "Navidrome couldn't rename the user" }, 502)
+    }
+    forgetVerifiedLogins(session.username)
+    accounts.rename(session.username, next)
+    renameRemoteSession(session.username, next)
+    await Promise.all([renameActivity(session.username, next), renameLikedSongs(session.username, next)])
+    return c.json(await sessionFor(next))
+  })
   account.delete('/passkeys/:id', (c) => {
     const result = accounts.removePasskey((requestAuth(c) as SubsonicAuth).username, c.req.param('id'))
     if (result === 'last') return c.json({ error: "This is your only passkey. Add another one first, or you won't be able to sign in." }, 409)
@@ -219,14 +257,13 @@ export function accountRoutes() {
 
   // Creates the Navidrome user and returns their first invite link, so the admin never has to open Navidrome.
   admin.post('/users', async (c) => {
-    const input = await body<{ username: string; name: string; isAdmin: boolean }>(c)
+    const input = await body<{ username: string; isAdmin: boolean }>(c)
     const username = typeof input.username === 'string' ? input.username.trim() : ''
-    const name = typeof input.name === 'string' && input.name.trim() ? input.name.trim().slice(0, 100) : username
     if (!USERNAME_PATTERN.test(username)) return c.json({ error: 'Use 1 to 64 letters, numbers, dots, dashes, underscores or @ for the username' }, 400)
     const adminUsername = (requestAuth(c) as SubsonicAuth).username
     if (await userExists(username)) return c.json({ error: `There is already a user called "${username}"` }, 409)
     try {
-      await createUser(adminUsername, { username, name, isAdmin: input.isAdmin === true })
+      await createUser(adminUsername, { username, isAdmin: input.isAdmin === true })
     } catch (error) {
       console.error('Creating a Navidrome user failed:', error instanceof Error ? error.message : error)
       return c.json({ error: "Navidrome couldn't create the user" }, 502)

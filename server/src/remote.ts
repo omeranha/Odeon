@@ -104,6 +104,13 @@ function sessionOf(username: string): Session {
   return session
 }
 
+export function renameRemoteSession(oldName: string, newName: string) {
+  const from = oldName.toLowerCase()
+  const session = sessions.get(from)
+  if (!session || from === newName.toLowerCase()) return
+  sessions.delete(from)
+  sessions.set(newName.toLowerCase(), session)
+}
 function usernameOf(c: Context): string {
   return (requestAuth(c) as SubsonicAuth).username
 }

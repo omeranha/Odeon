@@ -47,7 +47,7 @@ export function InvitePage() {
 
         {invite.data && (
           <>
-            <h1 className="text-3xl font-bold">Welcome, {invite.data.name}</h1>
+            <h1 className="text-3xl font-bold">Welcome, {invite.data.username}</h1>
             <p className="text-subdued">
               {invite.data.existingAccount ? 'Create a passkey on this device to sign in as ' : "You've been invited to Odeon as "}
               <span className="font-bold text-white">{invite.data.username}</span>. Your passkey uses this device's fingerprint, face or PIN, so there's no password to remember.

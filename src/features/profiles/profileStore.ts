@@ -6,7 +6,6 @@ import { defaultProfileSettings, type ProfileSettings } from '../settings/profil
 export interface Profile {
   id: string
   username: string
-  displayName: string
   isAdmin: boolean
   avatarUrl?: string
   token: string
@@ -23,6 +22,7 @@ interface ProfileState {
   activate: (id: string) => void
   deactivate: () => void
   remove: (id: string) => void
+  rename: (id: string, username: string) => void
   updateSettings: (id: string, settings: Partial<ProfileSettings>) => void
 }
 
@@ -45,6 +45,7 @@ export const useProfileStore = create<ProfileState>()(
           profiles: state.profiles.filter((profile) => profile.id !== id),
           activeProfileId: state.activeProfileId === id ? null : state.activeProfileId,
         })),
+      rename: (id, username) => set((state) => ({ profiles: state.profiles.map((profile) => (profile.id === id ? { ...profile, username } : profile)) })),
       updateSettings: (id, settings) =>
         set((state) => ({
           profiles: state.profiles.map((profile) => (profile.id === id ? { ...profile, settings: { ...profile.settings, ...settings } } : profile)),

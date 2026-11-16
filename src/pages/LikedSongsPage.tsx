@@ -28,7 +28,7 @@ export function LikedSongsPage() {
       title="Liked Songs"
       meta={
         <>
-          <span className="font-bold text-white">{profile.displayName}</span>
+          <span className="font-bold text-white">{profile.username}</span>
           <MetaSeparator />
           <span>{pluralize(songs.length, 'song')}</span>
         </>

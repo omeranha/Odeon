@@ -50,6 +50,15 @@ function cleanQuery(value: unknown): string | undefined {
   return query.length >= 2 ? query : undefined
 }
 
+export async function renameActivity(oldName: string, newName: string) {
+  await store.ready
+  store.update((data) => {
+    const from = oldName.toLowerCase()
+    if (from === newName.toLowerCase() || !data.users[from]) return
+    data.users[newName.toLowerCase()] = data.users[from]
+    delete data.users[from]
+  })
+}
 export function activityRoutes() {
   const app = new Hono()
 

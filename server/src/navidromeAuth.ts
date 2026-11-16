@@ -6,7 +6,6 @@ import { config } from './config.ts'
 
 export interface NavidromeSession {
   id: string
-  name: string
   username: string
   isAdmin: boolean
   subsonicToken: string
@@ -16,7 +15,6 @@ export interface NavidromeSession {
 export interface NavidromeUser {
   id: string
   username: string
-  name: string
   isAdmin: boolean
 }
 
@@ -35,27 +33,41 @@ export async function sessionFor(username: string): Promise<NavidromeSession | u
   if (!literal) throw new Error('Navidrome did not return its app configuration. Is ND_EXTAUTH_TRUSTEDSOURCES set to this server?')
   const auth = (JSON.parse(JSON.parse(literal) as string) as { auth?: NavidromeSession }).auth
   if (!auth?.subsonicToken) throw new Error('Navidrome did not trust this server. Check ND_EXTAUTH_TRUSTEDSOURCES.')
-  return { id: auth.id, name: auth.name, username: auth.username, isAdmin: Boolean(auth.isAdmin), subsonicToken: auth.subsonicToken, subsonicSalt: auth.subsonicSalt }
+  return { id: auth.id, username: auth.username, isAdmin: Boolean(auth.isAdmin), subsonicToken: auth.subsonicToken, subsonicSalt: auth.subsonicSalt }
 }
 
 export async function listUsers(adminUsername: string): Promise<NavidromeUser[]> {
   const response = await fetch(`${config.navidromeUrl}/api/user?_sort=userName&_order=ASC`, { headers: asUser(adminUsername), signal: AbortSignal.timeout(10_000) })
   if (!response.ok) throw new Error(`Navidrome user list failed with HTTP ${response.status}`)
-  const users = (await response.json()) as { id: string; userName: string; name: string; isAdmin: boolean }[]
-  return users.map((user) => ({ id: user.id, username: user.userName, name: user.name || user.userName, isAdmin: Boolean(user.isAdmin) }))
+  const users = (await response.json()) as { id: string; userName: string; isAdmin: boolean }[]
+  return users.map((user) => ({ id: user.id, username: user.userName, isAdmin: Boolean(user.isAdmin) }))
 }
 
 // People sign in with an invite and a passkey, never with this password. Subsonic tokens are derived from it, though,
 // so an empty or guessable one would let anyone sign in as the user; it's random and never shown or stored here.
 // Navidrome gives a new regular user its default libraries, and an admin all of them.
-export async function createUser(adminUsername: string, user: { username: string; name: string; isAdmin: boolean }): Promise<void> {
+export async function createUser(adminUsername: string, user: { username: string; isAdmin: boolean }): Promise<void> {
   const response = await fetch(`${config.navidromeUrl}/api/user`, {
     method: 'POST',
     headers: { ...asUser(adminUsername), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userName: user.username, name: user.name, email: '', isAdmin: user.isAdmin, password: randomBytes(32).toString('base64url') }),
+    body: JSON.stringify({ userName: user.username, name: user.username, email: '', isAdmin: user.isAdmin, password: randomBytes(32).toString('base64url') }),
     signal: AbortSignal.timeout(10_000),
   })
   if (!response.ok) throw new Error(`Navidrome refused to create the user (HTTP ${response.status}): ${(await response.text()).slice(0, 200)}`)
+}
+
+// Navidrome only lets administrators change a user name, so the change is made as one. Everything else about the user, including
+// the password the Subsonic tokens are derived from, is sent back as it was.
+export async function renameUser(adminUsername: string, userId: string, username: string): Promise<'renamed' | 'taken'> {
+  const url = `${config.navidromeUrl}/api/user/${encodeURIComponent(userId)}`
+  const current = await fetch(url, { headers: asUser(adminUsername), signal: AbortSignal.timeout(10_000) })
+  if (!current.ok) throw new Error(`Navidrome user lookup failed with HTTP ${current.status}`)
+  const user = (await current.json()) as Record<string, unknown>
+  const response = await fetch(url, { method: 'PUT', headers: { ...asUser(adminUsername), 'Content-Type': 'application/json' }, body: JSON.stringify({ ...user, userName: username, name: username }), signal: AbortSignal.timeout(10_000) })
+  if (response.ok) return 'renamed'
+  const detail = (await response.text()).slice(0, 200)
+  if (detail.includes('ra.validation.unique')) return 'taken'
+  throw new Error(`Navidrome refused to rename the user (HTTP ${response.status}): ${detail}`)
 }
 
 // Checks the trust setup once at startup so a misconfiguration shows up in the logs right away.

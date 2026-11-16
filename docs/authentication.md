@@ -12,6 +12,11 @@ The first invite comes from the command line, for a Navidrome administrator:
 docker exec odeon node src/invite.ts <navidrome-admin-username>
 ```
 
+## Changing a username
+
+Users have a single name: their Navidrome username. Anyone can change theirs under Settings, Account. The server renames the Navidrome user as an administrator, because Navidrome does not let regular users do it, and moves the user's passkeys, open invites, history and liked songs to the new name. Playlists, stars and play counts belong to the Navidrome user id, so they are untouched.
+
+The device that made the change keeps working, but its playback queue is cleared. Other devices still hold the old name, so they ask for a new sign-in (a passkey or a code). An account named in `ALEXA_USERNAME` or `QUALITY_AUTO_USER` cannot be renamed, because the server settings refer to it by name. Changing a username needs at least one administrator account that has signed in to Odeon.
 ## Locking someone out
 
 Delete the user or change their password in Navidrome. That invalidates their token, and a re-created user with the same name cannot use the old passkeys.

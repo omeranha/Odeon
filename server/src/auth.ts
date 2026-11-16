@@ -8,6 +8,10 @@ const CACHE_TTL_MS = 5 * 60 * 1000
 const MAX_CACHE_ENTRIES = 500
 const verified = new Map<string, number>()
 
+// A renamed user's old logins would otherwise pass for the rest of the cache time.
+export function forgetVerifiedLogins(username: string) {
+  for (const key of verified.keys()) if (key.split('\n')[0].toLowerCase() === username.toLowerCase()) verified.delete(key)
+}
 export type AuthCheck = 'ok' | 'invalid' | 'unreachable'
 
 export async function checkSubsonicAuth(auth: SubsonicAuth): Promise<AuthCheck> {
