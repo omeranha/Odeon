@@ -5,6 +5,7 @@ import { bodyLimit } from 'hono/body-limit'
 import { proxy } from 'hono/proxy'
 import { join } from 'node:path'
 import { accountRoutes } from './accountRoutes.ts'
+import { activityRoutes } from './activity.ts'
 import { alexaRoutes, createAlexaParts } from './alexa/routes.ts'
 import { config } from './config.ts'
 import { createDowntifyClient } from './downtify.ts'
@@ -15,6 +16,7 @@ import { createInnertube } from './innertube.ts'
 import { createQualityUpgrade } from './qualityUpgrade.ts'
 import { createSlskdClient } from './slskd.ts'
 import { internalRoutes, writeInternalToken } from './internal.ts'
+import { likedSongsRoutes } from './likedSongs.ts'
 import { lyricsRoutes } from './lyrics.ts'
 import { checkTrust, sessionFor } from './navidromeAuth.ts'
 import { createPlaylistImporter } from './playlistImport.ts'
@@ -52,6 +54,8 @@ app.use('*', securityHeaders)
 app.use('/api/*', bodyLimit({ maxSize: 512 * 1024 }))
 app.route('/api/downtify', downtifyRoutes(downtify, importer, explicitRefresh, quality, innertube))
 app.route('/api/remote', remoteRoutes())
+app.route('/api/activity', activityRoutes())
+app.route('/api/liked-songs', likedSongsRoutes())
 app.route('/api/lyrics', lyricsRoutes())
 app.route('/api/recommendations', recommendationRoutes(songFit))
 app.route('/api', accountRoutes())

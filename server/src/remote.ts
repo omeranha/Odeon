@@ -67,7 +67,7 @@ const text = (value: unknown, max: number): string | undefined => (typeof value 
 const number = (value: unknown, max: number): number | undefined => (typeof value === 'number' && Number.isFinite(value) && value >= 0 ? Math.min(value, max) : undefined)
 
 // Songs are rebuilt field by field, so neither side can push credentials or arbitrary data through the relay.
-function cleanSong(value: unknown): RemoteSong | undefined {
+export function cleanSong(value: unknown): RemoteSong | undefined {
   if (!value || typeof value !== 'object') return undefined
   const song = value as Record<string, unknown>
   const id = text(song.id, 200)
