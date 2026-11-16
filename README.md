@@ -10,6 +10,7 @@ Odeon can also add music to your library through [Downtify](https://github.com/h
 
 - Browse, search, Liked Songs, editable playlists, queue with shuffle and repeat, lock-screen controls.
 - Synced lyrics, a 10-band equalizer and offline downloads.
+- Per-user history: songs played, recent searches and listening time per month. Songs from YouTube Music can be liked without adding them to the library.
 - Search that shows your library and YouTube Music in one list, with remixes, covers and karaoke set aside behind one button. Paste a Spotify, YouTube Music, Deezer or SoundCloud link to open it.
 - Always the original audio, with the codec and bitrate shown next to each artist name.
 - Similar songs, autoplay when the queue ends, and smart shuffle. Suggestions are filtered by language, year and genre.
@@ -83,7 +84,7 @@ Mount Downtify's `/downloads` on a folder inside the library Navidrome scans.
 | `ALEXA_USERNAME` | with `ALEXA_SKILL_ID` | The Navidrome user whose library, playlists and likes the Echo plays |
 | `ALEXA_PUBLIC_URL` | no | Public HTTPS address for the links the Echo streams from (default: the first `WEBAUTHN_ORIGINS`) |
 | `TRUSTED_PROXIES` | no | Addresses allowed to set `CF-Connecting-IP` and `X-Forwarded-For`, e.g. the cloudflared network `172.18.0.0/16` |
-| `DATA_DIR` | no | Where accounts, invites, playlist imports and caches are saved |
+| `DATA_DIR` | no | Where accounts, invites, playlist imports, play and search history, liked YouTube Music songs and caches are saved |
 | `STATIC_DIR` | no | The built PWA to serve (the Docker image sets it) |
 | `PORT` | no | Listening port (default `3000`) |
 

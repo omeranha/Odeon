@@ -6,6 +6,7 @@ import { RequireProfile } from '../features/profiles/RequireProfile'
 import { AppLayout } from '../layout/AppLayout'
 import { AlbumPage } from '../pages/AlbumPage'
 import { ArtistPage } from '../pages/ArtistPage'
+import { HistoryPage } from '../pages/HistoryPage'
 import { HomePage } from '../pages/HomePage'
 import { LibraryPage } from '../pages/LibraryPage'
 import { LikedSongsPage } from '../pages/LikedSongsPage'
@@ -35,6 +36,7 @@ export const router = createBrowserRouter([
               { path: 'album/:id', element: <AlbumPage /> },
               { path: 'artist/:id', element: <ArtistPage /> },
               { path: 'playlist/:id', element: <PlaylistPage /> },
+              { path: 'history', element: <HistoryPage /> },
               { path: 'settings', element: <SettingsPage /> },
               { path: 'get-music', element: <GetMusicPage /> },
             ],

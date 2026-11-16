@@ -15,6 +15,8 @@ import { useIsSourcePlaying, usePlayRemoteCollection } from '../features/player/
 import { usePlayerStore } from '../features/player/playerStore'
 import { CatalogResults } from '../features/getMusic/CatalogResults'
 import { useCatalogSearch, useGetMusicEnabled } from '../features/getMusic/hooks'
+import { useRecentSearches, useRecordSearch } from '../features/history/hooks'
+import { RecentSearches } from '../features/history/RecentSearches'
 import { SimilarSongsSection } from '../features/recommendations/SimilarSongsSection'
 import { mergeSources } from '../features/recommendations/similar'
 import { organizeSearchSongs } from '../features/recommendations/versions'
@@ -48,6 +50,8 @@ export function SearchPage() {
   const [filter, setFilter] = useState<Filter>('all')
   const getMusicEnabled = useGetMusicEnabled()
   const catalogQuery = useDebouncedValue(query, 600)
+  const { data: recentSearches } = useRecentSearches()
+  useRecordSearch(query)
   const showLink = getMusicEnabled && isMusicLink(query)
   const catalog = useCatalogSearch(catalogQuery, getMusicEnabled && !showLink)
   const term = debouncedQuery.trim().toLowerCase()
@@ -72,7 +76,13 @@ export function SearchPage() {
       </div>
 
       {!term ? (
-        <MessageState title="Play what you love" message="Search for artists, albums, songs and playlists." />
+        recentSearches?.length ? (
+          <div className="pt-4 md:pt-6">
+            <RecentSearches />
+          </div>
+        ) : (
+          <MessageState title="Play what you love" message="Search for artists, albums, songs and playlists." />
+        )
       ) : showLink ? (
         <div className="pt-2 md:pt-6">
           <CatalogResults query={catalogQuery} />

@@ -15,6 +15,12 @@ export function formatTotalDuration(seconds: number): string {
   return `${total} sec`
 }
 
+export function formatListeningTime(seconds: number): string {
+  const minutes = Math.floor(seconds / 60)
+  if (minutes >= 60) return `${Math.floor(minutes / 60)} hr ${minutes % 60} min`
+  return minutes > 0 ? `${minutes} min` : 'Less than a minute'
+}
+
 export function pluralize(count: number, word: string): string {
   return `${count} ${word}${count === 1 ? '' : 's'}`
 }

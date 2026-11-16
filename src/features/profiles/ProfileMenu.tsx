@@ -1,14 +1,12 @@
 import clsx from 'clsx'
-import { CircleArrowDown, LogOut, Settings, Users } from 'lucide-react'
+import { History, LogOut, Settings, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { useGetMusicEnabled } from '../getMusic/hooks'
 import { ProfileAvatar } from './ProfileAvatar'
 import { useCurrentProfile, useProfileStore } from './profileStore'
 
 export function ProfileMenu({ align = 'right' }: { align?: 'left' | 'right' }) {
   const profile = useCurrentProfile()
-  const getMusicEnabled = useGetMusicEnabled()
   const deactivate = useProfileStore((state) => state.deactivate)
   const remove = useProfileStore((state) => state.remove)
   const [open, setOpen] = useState(false)
@@ -39,11 +37,9 @@ export function ProfileMenu({ align = 'right' }: { align?: 'left' | 'right' }) {
             <Link to="/settings" role="menuitem" onClick={() => setOpen(false)} className={itemClass}>
               <Settings className="size-4" /> Settings
             </Link>
-            {getMusicEnabled && (
-              <Link to="/get-music" role="menuitem" onClick={() => setOpen(false)} className={itemClass}>
-                <CircleArrowDown className="size-4" /> Get music
-              </Link>
-            )}
+            <Link to="/history" role="menuitem" onClick={() => setOpen(false)} className={itemClass}>
+              <History className="size-4" /> History
+            </Link>
             <button type="button" role="menuitem" onClick={deactivate} className={itemClass}>
               <Users className="size-4" /> Switch profile
             </button>
