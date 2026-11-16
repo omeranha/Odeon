@@ -23,6 +23,7 @@ const sourceLabels: Record<PlaySourceType, string> = {
   artist: 'Playing from artist',
   liked: 'Playing from your library',
   search: 'Playing from search',
+  history: 'Playing from your history',
 }
 
 export function FullScreenPlayer() {
@@ -76,7 +77,7 @@ function FullScreenView({ song, remoteName }: { song: SubsonicSong; remoteName: 
           </div>
           {remoteName && <PlayingOnLabel name={remoteName} />}
         </div>
-        {!song.external && !remoteName && <LikeButton kind="song" item={song} size="lg" />}
+        {!remoteName && <LikeButton kind="song" item={song} size="lg" />}
       </div>
 
       <div className="mt-5">

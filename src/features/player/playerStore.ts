@@ -4,7 +4,7 @@ import type { SubsonicSong } from '../../lib/subsonic/types'
 import { recencyWeights } from './history'
 
 export type RepeatMode = 'off' | 'all' | 'one'
-export type PlaySourceType = 'album' | 'playlist' | 'artist' | 'liked' | 'search'
+export type PlaySourceType = 'album' | 'playlist' | 'artist' | 'liked' | 'search' | 'history'
 
 export interface PlaySource {
   type: PlaySourceType
@@ -17,6 +17,8 @@ interface PlayerState {
   originalQueue: SubsonicSong[] | null
   currentIndex: number
   queuedCount: number
+  // Songs already played, oldest first, so "previous" goes back to what was actually heard, not to the neighbor in the queue.
+  history: SubsonicSong[]
   source: PlaySource | null
   playbackId: number
   isPlaying: boolean
@@ -87,6 +89,19 @@ function withoutFirst<T>(items: T[], item: T): T[] {
   return index === -1 ? items : [...items.slice(0, index), ...items.slice(index + 1)]
 }
 
+const HISTORY_LIMIT = 50
+
+function rememberCurrent(state: Pick<PlayerState, 'queue' | 'currentIndex' | 'history'>): SubsonicSong[] {
+  const current = state.queue[state.currentIndex]
+  if (!current || state.history[state.history.length - 1]?.id === current.id) return state.history
+  return [...state.history, current].slice(-HISTORY_LIMIT)
+}
+
+function indexForPrevious(queue: SubsonicSong[], songId: string, currentIndex: number): number {
+  for (let index = currentIndex - 1; index >= 0; index--) if (queue[index].id === songId) return index
+  return queue.findIndex((song) => song.id === songId)
+}
+
 type QueueFields = Pick<PlayerState, 'queue' | 'originalQueue' | 'currentIndex' | 'queuedCount' | 'shuffle' | 'smartShuffle'>
 
 function shuffleOn(state: QueueFields): Partial<QueueFields> {
@@ -112,6 +127,7 @@ export const usePlayerStore = create<PlayerState>()(
       originalQueue: null,
       currentIndex: 0,
       queuedCount: 0,
+      history: [],
       source: null,
       playbackId: 0,
       isPlaying: false,
@@ -128,7 +144,7 @@ export const usePlayerStore = create<PlayerState>()(
         set((state) => {
           if (songs.length === 0) return {}
           const start = startIndex ?? (state.shuffle ? Math.floor(Math.random() * songs.length) : 0)
-          const base = { source, queuedCount: 0, isPlaying: true, playbackId: state.playbackId + 1 }
+          const base = { source, queuedCount: 0, isPlaying: true, playbackId: state.playbackId + 1, history: rememberCurrent(state) }
           if (!state.shuffle) return { ...base, queue: songs, originalQueue: null, currentIndex: start }
           const rest = songs.filter((_, index) => index !== start)
           return { ...base, queue: [songs[start], ...freshShuffle(rest)], originalQueue: songs, currentIndex: 0 }
@@ -140,24 +156,39 @@ export const usePlayerStore = create<PlayerState>()(
       next: () =>
         set((state) => {
           if (state.queue.length === 0) return {}
+          const history = rememberCurrent(state)
           const atEnd = state.currentIndex >= state.queue.length - 1
-          if (atEnd && state.repeat === 'off') return { currentIndex: 0, queuedCount: 0, isPlaying: false, playbackId: state.playbackId + 1 }
-          return { currentIndex: atEnd ? 0 : state.currentIndex + 1, queuedCount: Math.max(0, state.queuedCount - 1), playbackId: state.playbackId + 1 }
+          if (atEnd && state.repeat === 'off') return { currentIndex: 0, queuedCount: 0, isPlaying: false, playbackId: state.playbackId + 1, history }
+          return { currentIndex: atEnd ? 0 : state.currentIndex + 1, queuedCount: Math.max(0, state.queuedCount - 1), playbackId: state.playbackId + 1, history }
         }),
 
       previous: () =>
         set((state) => {
           if (state.queue.length === 0) return {}
+          const current = state.queue[state.currentIndex]
+          const history = [...state.history]
+          while (history.length > 0 && history[history.length - 1].id === current?.id) history.pop()
+          const played = history.pop()
+          if (played) {
+            const index = indexForPrevious(state.queue, played.id, state.currentIndex)
+            const playbackId = state.playbackId + 1
+            if (index !== -1) return { history, currentIndex: index, queuedCount: index > state.currentIndex ? Math.max(0, state.currentIndex + state.queuedCount - index) : 0, playbackId }
+            // Not in the queue any more (another list was played since): it goes back in just before the current song.
+            const queue = [...state.queue.slice(0, state.currentIndex), played, ...state.queue.slice(state.currentIndex)]
+            return { history, queue, queuedCount: state.queuedCount + 1, playbackId }
+          }
+          // Search results have no order worth stepping back through, so with nothing played before, the song restarts.
+          if (state.source?.type === 'search') return { history, playbackId: state.playbackId + 1 }
           const atStart = state.currentIndex === 0
           const index = atStart ? (state.repeat === 'all' ? state.queue.length - 1 : 0) : state.currentIndex - 1
-          return { currentIndex: index, playbackId: state.playbackId + 1 }
+          return { history, currentIndex: index, playbackId: state.playbackId + 1 }
         }),
 
       jumpTo: (index) =>
         set((state) => {
           if (index < 0 || index >= state.queue.length) return {}
           const queuedCount = index > state.currentIndex ? Math.max(0, state.currentIndex + state.queuedCount - index) : 0
-          return { currentIndex: index, queuedCount, isPlaying: true, playbackId: state.playbackId + 1 }
+          return { currentIndex: index, queuedCount, isPlaying: true, playbackId: state.playbackId + 1, history: rememberCurrent(state) }
         }),
 
       // Like Spotify, queued songs play right after the current one, ahead of the rest of the album or playlist.
@@ -228,7 +259,7 @@ export const usePlayerStore = create<PlayerState>()(
       setLyricsOpen: (lyricsOpen) => set((state) => ({ lyricsOpen, queueOpen: lyricsOpen ? false : state.queueOpen })),
       setFullScreenOpen: (fullScreenOpen) => set({ fullScreenOpen }),
       clear: () =>
-        set((state) => ({ queue: [], originalQueue: null, currentIndex: 0, queuedCount: 0, source: null, isPlaying: false, playbackId: state.playbackId + 1, queueOpen: false, lyricsOpen: false, fullScreenOpen: false })),
+        set((state) => ({ queue: [], originalQueue: null, currentIndex: 0, queuedCount: 0, history: [], source: null, isPlaying: false, playbackId: state.playbackId + 1, queueOpen: false, lyricsOpen: false, fullScreenOpen: false })),
     }),
     {
       name: 'spotydrome-player',
@@ -238,6 +269,7 @@ export const usePlayerStore = create<PlayerState>()(
         originalQueue: state.originalQueue,
         currentIndex: state.currentIndex,
         queuedCount: state.queuedCount,
+        history: state.history,
         source: state.source,
         shuffle: state.shuffle,
         smartShuffle: state.smartShuffle,
